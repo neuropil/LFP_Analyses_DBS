@@ -120,7 +120,7 @@ for fi = 1:length(fileLIST)
     
     csMean = mean(ceegD);
     csSTD = std(ceegD);
-    csThr = csMean + (csSTD*17);
+    csThr = csMean + (csSTD*13);
     
     if sum(ceegD > csThr) ~= 0
         
