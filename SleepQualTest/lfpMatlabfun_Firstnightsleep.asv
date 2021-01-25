@@ -104,9 +104,106 @@ end
 
 
 %%
+wholeFle = [];
+for ffi = 33:length(fileLIST)
+    curFile = fileLIST{ffi};
+    load(curFile,'CEEG_2___10___EEG_2___10');
+    ceegD = double(CEEG_2___10___EEG_2___10);
+    
+    wholeFle = [wholeFle ,ceegD];
+    
+end
+
+%%
+
+a = peakseek(wholeFle , 25000, 3500);
+d = diff(a);
+
+%%
+close all
+plot(wholeFle)
+hold on
+xline(a(10))
+xline(a(11))
+xline(a(12))
+xline(a(13))
+
+
+%%
+a(117) = [];
+
+%%
+close all
+starTs = 1:2:162;
+stopS = 2:2:162;
+
+minSize = 1375*60;
+
+buffer = 4500;
+
+beforeStim = zeros(length(starTs),minSize);
+afterStim = zeros(length(starTs),minSize);
+
+for si = 1:length(starTs) - 1
+   
+    tmpStart1 = a(starTs(si)) - buffer - minSize;
+    tmpStart2 = a(starTs(si)) - buffer - 1;
+    
+    beforeStim(si,:) = wholeFle(tmpStart1:tmpStart2);
+    
+    tmpStop1 = a(stopS(si)) + buffer;
+    tmpStop2 = a(stopS(si)) + buffer + minSize - 1;
+    
+    afterStim(si,:) = wholeFle(tmpStop1:tmpStop2);
+    
+    
+end
+
+meanBF = transpose(mean(beforeStim));
+meanAF = transpose(mean(afterStim));
+
+sTTm = timetable(meanBF,'SampleRate',1375,'VariableName',"BF");
+sTTm.AF = meanAF;
+
+stackedplot(sTTm)
+
+figure;
+pspectrum(sTTm,"FrequencyLimits",[0 50])
+legend(["BeforeStim","AfterStim"])
+
+
+
+%%
+figure;
+pspectrum(sTTm.AF , sTTm.Time , "spectrogram", "FrequencyLimits",[10 40], "MinThreshold",-20)
+figure;
+pspectrum(sTTm.BF , sTTm.Time , "spectrogram", "FrequencyLimits",[10 40], "MinThreshold",-20)
+
+%%
+close all
+plot(wholeFle)
+hold on
+xline(a(117))
+
+
+%%
+
+for ai = 1:163
+    xline(a(ai))
+end
+
+%%
+[~,locations] = findpeaks(abCee,'MinPeakDistance',100);
+
+
+%%
+
 firstF = 0;
 outT = 0;
-for fi = 1:length(fileLIST)
+stimStart = 33;
+testDat = zeros(length(33:length(fileLIST)),1);
+countT = 1;
+for fi = 33:length(fileLIST)
     
     curFile = fileLIST{fi};
     
@@ -114,24 +211,29 @@ for fi = 1:length(fileLIST)
     load(curFile,'CEEG_2___10___EEG_2___10');
     plot(CEEG_2___10___EEG_2___10)
     
-    %     close all
-    
     ceegD = double(CEEG_2___10___EEG_2___10);
     
     csMean = mean(ceegD);
     csSTD = std(ceegD);
-    csThr = csMean + (csSTD*13);
+    csThr = csMean + (csSTD*4);
     
-    if sum(ceegD > csThr) ~= 0
-        
-        firstF = fi;
-        outT = csThr;
-        yline(csThr)
-        pause
-        break
-    else
-        close all
-    end
+    % Absolute value
+    abCee = abs(ceegD);
+    % Convert below threshold to 0
+    abCee(ceegD < csThr) = 0;
+    % find peaks
+    
+    [~,locations] = findpeaks(abCee,'MinPeakDistance',100);
+    
+    testDat(countT) = numel(locations);
+    countT = countT + 1;
+    
+    firstF = fi;
+    outT = csThr;
+    yline(csThr)
+    
+    pause
+    close all
     
     %     countT = countT + tmpN;
     
