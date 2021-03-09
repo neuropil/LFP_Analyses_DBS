@@ -19,7 +19,7 @@ labTab = table(chanNum,chanLab,chanID,'VariableNames',{'Number',...
 chanTYPE = {'EEG','LFP','EOG','EMG'};
 % Combine first 3 files
 allChan = struct;
-for fi = 1:3
+for fi = 1:10
     
     curFile = fileLIST{fi};
     
@@ -49,16 +49,30 @@ for fi = 1:3
             end
             
         end
-        
-        
+
     end
     
 end
 
+%% LFP Data
+lfpfieldNames = {'D0','D1','D2','D3'};
+allfieldNames = fieldnames(allChan);
+lfpdata = rmfield(allChan, allfieldNames(~ismember(allfieldNames,lfpfieldNames)));
+
+matLFP = zeros(4,length(lfpdata.D0));
+for mi = 1:4
+    allChan.(lfpfieldNames{mi}) = double(allChan.(lfpfieldNames{mi}));
+    matLFP(mi,:) =  allChan.(lfpfieldNames{mi});
+end
+
+comGndR = mean(matLFP);
+for cgf = 1:4
+    allChan.(lfpfieldNames{cgf}) = allChan.(lfpfieldNames{cgf}) - comGndR;
+end
 
 %%
 
-TT = timetable(transpose(double(allChan.D0)),'SampleRate',1375,'VariableName',["DO"]);
+TT = timetable(transpose(allChan.D0),'SampleRate',1375,'VariableName',"DO");
 TT.D1 = transpose(double(allChan.D1));
 TT.D2 = transpose(double(allChan.D2));
 TT.D3 = transpose(double(allChan.D3));
@@ -66,12 +80,9 @@ TT.D3 = transpose(double(allChan.D3));
 %%
 stackedplot(TT)
 
-
-
-
 %%
 
-pspectrum(TT,"FrequencyLimits",[0 50])
+pspectrum(TT,"FrequencyLimits",[0 100])
 legend(["D0","D1","D2","D3"])
 
 
